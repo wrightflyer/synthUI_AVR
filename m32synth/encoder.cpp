@@ -25,8 +25,8 @@ Encoder::Encoder(volatile uint8_t * port, uint8_t pin1, uint8_t pin2) :
     *mPORT |=   mPin1 | mPin2; // write to PORT to enable pull-ups
     // read initial state..
     uint8_t s = 0;
-    if (*mPIN & mPin1) s |= 1;
-    if (*mPIN & mPin2) s |= 2;
+    if (*mPIN & mPin1) s |= 2;
+    if (*mPIN & mPin2) s |= 1;
     mState = s;
 }
 
@@ -78,32 +78,27 @@ void Encoder::update() {
         state = (s >> 2);
     }
 */
-    uint8_t sin, p1in = 0, p2in = 0, scase;
-    int8_t change;
+    uint8_t PinBits;
     uint8_t s = mState & 3;
-    sin = s;
-    if (*mPIN & mPin1) {
-        p1in = 1;
-        s |= 4;
-    }
-    if (*mPIN & mPin1) {
-        p2in = 1;;
+    PinBits = *mPIN;
+    if (PinBits & mPin1) {
         s |= 8;
     }
-    scase = s;
+    if (PinBits & mPin2) {
+        s |= 4;
+    }
+    //PORTB = PinBits;
     switch (s) {
         case 0:
         case 5:
         case 10:
         case 15:
-            change = 0;
             break;
 
         case 1:
         case 7:
         case 8:
         case 14:
-            change = 1;
             mPos++;
             break;
 
@@ -111,32 +106,29 @@ void Encoder::update() {
         case 4:
         case 11:
         case 13:
-            change = -1;
             mPos--;
             break;
 
         case 3:
         case 12:
-            change = 2;
             mPos += 2;
             break;
 
         default: // 6 or 9
-            change = -2;
             mPos -= 2;
             break;
     }
     mState = (s >> 2);
-    printf("sin = %u, p1 = %u, p2 = %u, case = %u, change = %d, sout = %u\r\n", sin, p1in, p2in, scase, change, mState);
 }
 
 void Encoder::intUpdate(void) {
     update();
+    //printf("upd %u\r\n", (uint16_t) this);
 }
 
 int32_t Encoder::read() {
-    //update();
-    return mPos;
+    // update();
+    return mPos / 4; // it always moves up/down by 4
 }
 
 int32_t Encoder::readAndReset() {
