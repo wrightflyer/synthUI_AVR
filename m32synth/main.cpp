@@ -10,36 +10,48 @@
 
 void timerUpdate(void);
 
-Encoder enc1(&PORTC, 0, 1);
-Encoder enc2(&PORTC, 6, 7);
-Encoder enc3(&PORTD, 0, 1);
-Encoder enc4(&PORTD, 2, 3);
-Encoder enc5(&PORTD, 4, 5);
-Encoder enc6(&PORTD, 6, 7);
-Encoder enc7(&PORTB, 0, 1);
-Encoder enc8(&PORTB, 2, 3);
-Button but1(&PORTC, 2, Button::NO_PULL_UP);
-Button but2(&PORTC, 3, Button::NO_PULL_UP);
-Button but3(&PORTC, 4, Button::NO_PULL_UP);
-Button but4(&PORTC, 5, Button::NO_PULL_UP);
-Button but5(&PORTA, 4, Button::NO_PULL_UP);
-Button but6(&PORTA, 5, Button::NO_PULL_UP);
-Button but7(&PORTA, 6, Button::NO_PULL_UP);
-Button but8(&PORTA, 7, Button::NO_PULL_UP);
-Uart uart(9600);
-Timer0 tim(Timer0::TIM0_CTC, 100);
-DualJoystick joy(0, 1, 64);
+///////////// PORT A //////////////
+DualJoystick joy(0, 1, 64); // on A0/A1
+// A2 - unused
+Button  butJoy(&PORTA, 3, Button::NO_PULL_UP);
+Button  but1(  &PORTA, 4, Button::NO_PULL_UP);
+Button  but2(  &PORTA, 5, Button::NO_PULL_UP);
+Button  but3(  &PORTA, 6, Button::NO_PULL_UP);
+Button  but4(  &PORTA, 7, Button::NO_PULL_UP);
+
+///////////// PORT B //////////////
+Encoder enc1(  &PORTB, 0, 1);
+Encoder enc2(  &PORTB, 2, 3);
+Encoder enc3(  &PORTB, 4, 5); // SPI on 5/6/7 (with SS on 4)
+// B6 / B7 - unused
+
+///////////// PORT C //////////////
+Encoder enc4(  &PORTC, 0, 1);
+Button  but5(  &PORTC, 2, Button::NO_PULL_UP); // 2..5 are the JTAG pins
+Button  but6(  &PORTC, 3, Button::NO_PULL_UP);
+Button  but7(  &PORTC, 4, Button::NO_PULL_UP);
+Button  but8(  &PORTC, 5, Button::NO_PULL_UP);
+Encoder enc5(  &PORTC, 6, 7);
+
+///////////// PORT D //////////////
+Uart uart(9600); // on D0 / D1
+Encoder enc6(  &PORTD, 2, 3);
+Encoder enc7(  &PORTD, 4, 5);
+Encoder enc8(  &PORTD, 6, 7);
+
+Timer0  tim(Timer0::TIM0_CTC, 100);
 
 int main(void) {
     int32_t prev1 = 0, prev2 = 0, pos;
     uint16_t prevX = 0, prevY = 0;
+
     _delay_ms(4000);
     MCUCSR = (1 << JTD);
     MCUCSR = (1 << JTD);
-    DDRB = 0x03; // bottom 2 bits output
-    PORTB = 0;
+
     uart.connectStdio();
     printf("Hello World\r\n");
+
     tim.start(64);
     tim.attachInterrupt(Timer0::TIM0_COMP_ISR, timerUpdate);
     while(1) {
@@ -54,15 +66,19 @@ int main(void) {
             prev2 = pos;
         }
         if (but1.read() == 0) {
-            printf("Reset1");
+            printf("Reset1\r\n");
             enc1.readAndReset();
+            _delay_ms(1000);
         }
         if (but2.read() == 0) {
-            printf("Reset2");
+            printf("Reset2\r\n");
             enc2.readAndReset();
+            _delay_ms(1000);
         }
         DualJoystick::reading_t reading;
         reading = joy.read();
+        //reading.x = 0;
+        //reading.y = 0;
         if (abs(reading.x - prevX) > 4 || abs(reading.y - prevY) > 4) {
             printf("Joy X=%d, Y=%d\r\n", reading.x, reading.y);
             prevX = reading.x;
